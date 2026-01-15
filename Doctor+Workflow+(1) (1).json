@@ -1,0 +1,371 @@
+{
+  "name": "Doctor Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        304,
+        0
+      ],
+      "id": "c05341b6-31ea-4974-9eaf-ca904abb2927",
+      "name": "WhatsApp Trigger",
+      "webhookId": "ce6fe53e-12a4-4246-b59b-72db8d96eb15",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "aywrLxwEkfeHLXPp",
+          "name": "n8n-app 2 Creds"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "724852720722633",
+        "recipientPhoneNumber": "+91-",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        976,
+        0
+      ],
+      "id": "d2a89f42-1c40-4a39-b953-39607fcaac32",
+      "name": "Send message",
+      "webhookId": "65477014-a503-45a3-a867-6b663a0d1ec7",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "BEAmRtwbrBuUiES0",
+          "name": "n8n-app2-permanent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messages[0].text.body }}",
+        "options": {
+          "systemMessage": "=Identity & Persona\nYou are helperAI, the WhatsApp assistant for Dr. R Mehta 🏥.\nYou help patients with:\n\nChecking their previous diagnosis & prescriptions (based on their registered mobile number or Patient ID in Airtable).\n\nAnswering general health FAQs in simple terms.\n\nAdvising when to connect with the doctor directly for detailed or critical concerns.\n\nTone: Polite, empathetic, professional, and concise (like a trained hospital helpdesk assistant).\n\nConversational Flow\n\nStart Message\nHey! I’m Helper AI, your digital health assistant 🤖 for Dr. R Mehta. I can help you check your previous diagnosis, share basic advice, or guide you to connect with your doctor. How may I assist you today?\n\nFlow Logic\n\nIf the patient asks about past diagnosis or prescription\n→ Search Airtable (Patients table tool) by the key\n{{ $json.metadata.phone_number_id }}\n→ Share last diagnosis summary & prescribed medicines.\n→ Politely remind: \"This is based on your last hospital record. For any new or urgent symptoms, please connect with your doctor directly.\"\n\nIf the patient asks a general health question (e.g., diet for diabetes, headache remedies, vaccination schedules)\n→ Provide a short, safe, verified health FAQ response.\n→ Always add: \"This is general guidance only. Please consult your doctor for personalized advice.\"\n\nIf the patient asks about something beyond safe AI guidance (critical symptoms, multiple prescriptions, emergency cases)\n→ Respond: \"This looks important. I recommend speaking directly with your doctor. Would you like me to help schedule a call or share their contact info?\"\n\nIf the patient wants to raise a query for doctor follow-up use *create ticket* tool\n→ Ask step by step:\n\nFull Name\n\nAge\n\nMobile Number (if different from registered)\n\n\nMake sure to create a record by providing below details. \n\nTicketID - {{ $json.metadata.phone_number_id }}\nName, QueryDate, Concern and Doctor can be extracted easily.\n→ Confirm: \"Thanks! I’ve shared this with your doctor’s team. They will reach out shortly.\"\n→ Store this entry in Airtable (Tickets table) with Status = Open.\n\nBehavioral Guidelines\n\nAlways keep replies short and in plain text (no markdown).\n\nOne question at a time.\n\nNever suggest self-diagnosis beyond general safe advice.\n\nAlways mention when a doctor consultation is needed.\n\nDo not guess or invent details. Use only Airtable data + safe general medical advice.\n\nDynamic Variables (for n8n)\n\nTime is {{ $now }}\n\nToday is {{ $today }}\n\nPatient Number (WhatsApp ID) is {{ $json.contacts[0].wa_id }}\n\nPatient Name (from WhatsApp) is {{ $json.contacts[0].profile.name }}\n\nPatient ID (Airtable main ID for lookup) → query using Patient ID field is number without country code. - {{ $json.metadata.phone_number_id }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "402acff4-5ca5-49bd-bb0d-f342838fb90a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        208
+      ],
+      "id": "8487c126-1006-4212-a0f3-a3c5353958de",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "nFgRAcVUlBrb3CAf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appvOpVHb7ggvU0db",
+          "mode": "list",
+          "cachedResultName": "Patient Records",
+          "cachedResultUrl": "https://airtable.com/appvOpVHb7ggvU0db"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl6iUOcFUu6UblwK",
+          "mode": "list",
+          "cachedResultName": "Tickets",
+          "cachedResultUrl": "https://airtable.com/appvOpVHb7ggvU0db/tbl6iUOcFUu6UblwK"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "QueryDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('QueryDate', ``, 'string') }}",
+            "Concern": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Concern', ``, 'string') }}",
+            "AssignedDoctor": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('AssignedDoctor', ``, 'string') }}",
+            "Status": "Open",
+            "Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Name', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "TicketID"
+          ],
+          "schema": [
+            {
+              "id": "TicketID",
+              "displayName": "TicketID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "QueryDate",
+              "displayName": "QueryDate",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Concern",
+              "displayName": "Concern",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AssignedDoctor",
+              "displayName": "AssignedDoctor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Open",
+                  "value": "Open"
+                },
+                {
+                  "name": "Closed",
+                  "value": "Closed"
+                },
+                {
+                  "name": "Handled",
+                  "value": "Handled"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Typecast', ``, 'boolean') }}"
+        }
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        352
+      ],
+      "id": "db990c9d-2d85-4425-b903-3bbf5aeca4da",
+      "name": "Create a Ticket",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YF7M7K9coen91x1S",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appvOpVHb7ggvU0db",
+          "mode": "list",
+          "cachedResultName": "Patient Records",
+          "cachedResultUrl": "https://airtable.com/appvOpVHb7ggvU0db"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblGpuVTxxp6nDV6r",
+          "mode": "list",
+          "cachedResultName": "Patients",
+          "cachedResultUrl": "https://airtable.com/appvOpVHb7ggvU0db/tblGpuVTxxp6nDV6r"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        1056,
+        352
+      ],
+      "id": "f1285970-86ef-4cb7-8edb-44e1339fa1bd",
+      "name": "Patient Table",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YF7M7K9coen91x1S",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        352
+      ],
+      "id": "0e76fee5-751e-44d7-82f2-909779890fab",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "content": "Tool Needed\n",
+        "height": 224,
+        "width": 320,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        288
+      ],
+      "typeVersion": 1,
+      "id": "af656f51-0c58-4790-bb5c-45d275da7c0e",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a Ticket": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Patient Table": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "061094e4-9de8-45cd-9ca8-6db1d86dd4be",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0cc1de0dd4f90abc341a1baf6f6046729327a33bc357c212b26b606f44fae410"
+  },
+  "id": "lbvVVdVJ4RkSKSHV",
+  "tags": []
+}
